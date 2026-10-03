@@ -3,7 +3,7 @@ import Header from './components/Header';
 import AudioRecorder from './components/AudioRecorder';
 import ReviewTable from './components/ReviewTable';
 import LedgerHistory from './components/LedgerHistory';
-import AdminNotesPlaceholder from './components/AdminNotesPlaceholder';
+import AdminNotes from './components/AdminNotes';
 import { api } from './api';
 import { CheckCircle2, AlertTriangle, X, PlusCircle } from 'lucide-react';
 
@@ -158,7 +158,7 @@ export default function App() {
 
         {activeTab === 'history' && <LedgerHistory />}
 
-        {activeTab === 'admin-notes' && <AdminNotesPlaceholder />}
+        {activeTab === 'admin-notes' && <AdminNotes />}
       </main>
 
       {/* Footer */}

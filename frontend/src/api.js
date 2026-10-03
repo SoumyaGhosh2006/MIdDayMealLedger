@@ -1,5 +1,9 @@
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/ledger';
-const HEALTH_URL = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api/ledger', '') : 'http://localhost:8000') + '/health';
+const API_ROOT = import.meta.env.VITE_API_URL 
+  ? import.meta.env.VITE_API_URL.replace(/\/api\/ledger\/?$/, '') 
+  : 'http://localhost:8000';
+const BASE_URL = import.meta.env.VITE_API_URL || `${API_ROOT}/api/ledger`;
+const NOTES_URL = `${API_ROOT}/api/notes`;
+const HEALTH_URL = `${API_ROOT}/health`;
 
 /**
  * Re-extracts structured ledger data from edited or raw text via POST /api/ledger/extract-text.
@@ -22,6 +26,27 @@ export async function extractText(text, referenceDate = null) {
   }
   return body;
 }
+
+/**
+ * Uploads a document (PDF, TXT, MD) to POST /api/notes/generate-teaching-aid.
+ * Returns: { smart_filename: string, markdown_content: string, svg_diagrams: string[] }
+ */
+export async function generateTeachingAid(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch(`${NOTES_URL}/generate-teaching-aid`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(body.detail || body.error || `Failed to generate teaching aid (HTTP ${res.status})`);
+  }
+  return body;
+}
+
 
 export const api = {
   /**
@@ -102,6 +127,66 @@ export const api = {
     }
     return body;
   },
+
+  /**
+   * Persists an administrative note to POST /api/notes/.
+   * Payload: { date: 'YYYY-MM-DD', content: string }
+   */
+  async saveNote(noteData) {
+    const res = await fetch(`${NOTES_URL}/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(noteData),
+    });
+
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(body.detail || body.error || `Failed to save admin note (HTTP ${res.status})`);
+    }
+    return body;
+  },
+
+  /**
+   * Retrieves administrative notes from GET /api/notes/.
+   */
+  async fetchNotes(startDate = null, endDate = null, limit = 100, offset = 0) {
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    params.append('limit', limit);
+    params.append('offset', offset);
+
+    const res = await fetch(`${NOTES_URL}/?${params.toString()}`);
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(body.detail || body.error || `Failed to fetch admin notes (HTTP ${res.status})`);
+    }
+    return body;
+  },
+
+  /**
+   * Deletes an administrative note by ID.
+   */
+  async deleteNote(noteId) {
+    const res = await fetch(`${NOTES_URL}/${noteId}`, {
+      method: 'DELETE',
+    });
+
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(body.detail || body.error || `Failed to delete note (HTTP ${res.status})`);
+    }
+    return body;
+  },
+
+  /**
+   * Uploads a document (PDF, TXT, MD) to POST /api/notes/generate-teaching-aid.
+   * Generates formulas, HOTS questions, SVG whiteboard diagrams, and smart filename.
+   */
+  generateTeachingAid,
 };
 
 export default api;
+
+
+

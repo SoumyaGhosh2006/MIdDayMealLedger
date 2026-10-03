@@ -48,3 +48,13 @@ class DailyLedger(Base):
         onupdate=func.now(),
         nullable=False
     )
+
+
+class AdminNote(Base):
+    __tablename__ = "admin_notes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, index=True)
+    date: Mapped[date] = mapped_column(Date, index=True, nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+

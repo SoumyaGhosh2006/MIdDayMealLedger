@@ -102,3 +102,24 @@ class ExtractTextRequest(BaseModel):
     text: str
     reference_date: Optional[date] = None
 
+
+class AdminNoteCreate(BaseModel):
+    date: date
+    content: str = Field(..., min_length=1, description="Content of the administrative note")
+
+
+class AdminNoteResponse(BaseModel):
+    id: int
+    date: date
+    content: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TeachingAidResponse(BaseModel):
+    smart_filename: str = Field(..., description="Descriptive filename without extension e.g. Trigonometry_Teaching_Aid_Class10")
+    markdown_content: str = Field(..., description="Structured teaching aid in markdown format including formula summary and 3-5 HOTS questions")
+    svg_diagrams: list[str] = Field(default_factory=list, description="Array of valid, self-contained SVG diagram strings")
+
+

@@ -16,7 +16,7 @@ from backend.exceptions import (
     TranscriptionError,
     TranscriptTooLargeError,
 )
-from backend.routers import ledger
+from backend.routers import ledger, notes
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("middaymeal.api")
@@ -113,6 +113,7 @@ async def handle_configuration_error(request: Request, exc: ConfigurationError):
 
 # Mount routers
 app.include_router(ledger.router, prefix="/api/ledger", tags=["Ledger"])
+app.include_router(notes.router, prefix="/api/notes", tags=["Admin Notes"])
 
 
 @app.get("/health", tags=["System"])

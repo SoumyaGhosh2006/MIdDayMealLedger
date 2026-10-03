@@ -60,4 +60,94 @@ Summary of Implementation:
   * python backend/test_phase3.py: All 12 test cases passed.
 
 ================================================================================
+PHASE 5: ADMIN NOTES & CLIENT-SIDE PDF SCANNER MODULE
+================================================================================
+
+Summary of Implementation:
+- 1. Backend Data Layer & Database (backend/models.py, backend/schemas.py, backend/services/note_service.py):
+  * AdminNote SQLAlchemy model added with id (PK, index), date (Date, index), content (Text), created_at (DateTime timezone-aware server default).
+  * Pydantic schemas: AdminNoteCreate(date, content) and AdminNoteResponse(id, date, content, created_at, from_attributes=True).
+  * Database service with clean transaction handling, rollback on failure, and descending chronological sorting.
+
+- 2. Backend Routing & System Mounting (backend/routers/notes.py, backend/main.py):
+  * Mounted APIRouter at /api/notes.
+  * POST /api/notes/ (201 Created) persists notes to SQLite database.
+  * GET /api/notes/ (200 OK) retrieves notes with optional start_date and end_date filtering and pagination.
+  * DELETE /api/notes/{id} deletes note with 404 handling.
+  * Automatic table creation handled seamlessly by lifespan context on startup.
+
+- 3. Frontend API Client (frontend/src/api.js):
+  * Added saveNote(noteData), fetchNotes(startDate, endDate, limit, offset), and deleteNote(id).
+  * Configured dynamic NOTES_URL alongside BASE_URL with full backwards compatibility.
+
+- 4. Client-Side PDF Scanner (frontend/src/components/DocumentScanner.jsx):
+  * Installed jspdf library.
+  * MediaDevices camera integration with facingMode: "environment" (rear camera ideal on mobile devices).
+  * Video viewfinder with document boundary guide overlay.
+  * "Snap Page" draws video frames to hidden HTML5 canvas and stores in capturedPages state array.
+  * File upload fallback for devices without camera hardware.
+  * Thumbnail gallery with quick delete, fullsize preview modal, and page re-ordering.
+  * "Generate PDF" with jsPDF: iterates captured pages, dynamically scales to standard A4 (210 x 297 mm) while preserving aspect ratios, and triggers download of scanned_document.pdf.
+
+- 5. Admin Notes UI (frontend/src/components/AdminNotes.jsx, App.jsx, Header.jsx):
+  * Replaced AdminNotesPlaceholder with production AdminNotes component.
+  * Integrated institutional layout: date picker, template quick-insert chips, note remarks textarea, and save button with loading indicator.
+  * Embedded DocumentScanner within the view.
+  * Chronological list of saved administrative notes with date badge, copy-to-clipboard, delete, and refresh.
+  * Promoted "Admin Notes" tab in Header.jsx as a first-class feature tab.
+
+- 6. AI Teaching Aid Generator (backend/routers/notes.py, schemas.py, frontend/src/components/AdminNotes.jsx, api.js):
+  * Added PyPDF2 to backend/requirements.txt and installed it.
+  * Added Pydantic schema TeachingAidResponse(smart_filename: str, markdown_content: str, svg_diagrams: list[str]).
+  * Added POST /api/notes/generate-teaching-aid extracting text from PDFs via PyPDF2 or UTF-8 text documents.
+  * System prompt instructs Groq LLM to act as pedagogical assistant, consolidate formula sheets, produce 3-5 HOTS questions, generate valid SVG whiteboard diagrams, and assign a smart descriptive filename (e.g. Trigonometry_Teaching_Aid_Class10).
+  * Frontend Drag-and-Drop upload zone in AdminNotes.jsx accepting PDF/TXT files.
+  * Interactive preview rendering Markdown and self-contained SVG whiteboard diagrams.
+  * "Download Teaching Aid" button converting rendered preview into high-resolution PDF via html2canvas & jsPDF, named strictly as `<smart_filename>.pdf`.
+
+- 7. Formatting & Export Fixes:
+  * Backend JSON Escape Guard: Added strict instruction to system prompt to double-escape backslashes (\\n, \\frac), plus regex fallback repair on decode failure.
+  * Markdown Newline Sanitization: Sanitized literal escaped newlines (markdown.replace(/\\n/g, '\n')) before rendering and clipboard copying in AdminNotes.jsx.
+  * html2canvas OKLCH Fix: Added onclone callback to html2canvas in both AdminNotes.jsx and LedgerHistory.jsx to force text colors and normalize oklch background colors to transparent, preventing canvas parse crashes.
+
+- 8. LaTeX Math Renderer & HTML-to-Image PDF Export Upgrade:
+  * Installed remark-math, rehype-katex, katex, and html-to-image in frontend.
+  * Backend prompt upgrade: Instructs Groq LLM to format all math formulas, variables, and equations using LaTeX ($E_p$ inline and $$...$$ block math) with double-escaped JSON backslashes.
+  * Markdown preview upgraded to ReactMarkdown with remarkMath and rehypeKatex plugins, importing KaTeX CSS for textbook-quality formula styling.
+  * Replaced html2canvas with toPng from html-to-image for PDF exports, bypassing all CSS oklch color parsing errors cleanly.
+
+- 9. Full Stack Verification:
+  * python backend/test_phase5.py: All test cases passed (POST notes, GET notes, date filter, 400 validation, DELETE, POST /generate-teaching-aid).
+  * python backend/test_phase3.py: All 12 API layer tests passed.
+  * npm run build: Built production bundle with KaTeX assets cleanly in 1.22s with 0 errors.
+
+- 10. Master Architectural Plan Overhaul (Backend Prompt, LaTeX, GFM, & SVG Rendering):
+  * Backend System Prompt 4-Rule Architecture (backend/routers/notes.py):
+    - JSON Rules: Strictly valid JSON, double-escape all backslashes (\\frac, \\n), no markdown code fences wrapping JSON.
+    - Markdown Rules: GitHub Flavored Markdown (GFM), tables must include separator rows (---). Never mix display equations ($$) inside table cells (use plain text or inline $ math).
+    - LaTeX Rules: KaTeX-compatible syntax, single $ for inline, double $$ for display math, no ASCII approximations.
+    - SVG Rules (Force Complexity): Every SVG must contain >= 10 SVG elements, >= 2 graph lines/curves, >= 3 text labels, >= 1 highlighted intersection point, never an empty grid/axes.
+  * Installed remark-gfm and @tailwindcss/typography in frontend/.
+  * Loaded @plugin "@tailwindcss/typography"; in frontend/src/index.css.
+  * Frontend Typography Styling (frontend/src/components/AdminNotes.jsx):
+    - Wrapped ReactMarkdown in exact textbook Tailwind typography container:
+      `prose prose-lg max-w-none prose-headings:font-bold prose-headings:text-slate-800 prose-table:border-collapse prose-table:w-full prose-th:border prose-th:border-slate-300 prose-th:bg-slate-100 prose-th:p-3 prose-td:border prose-td:border-slate-300 prose-td:p-3 prose-code:text-blue-600`
+    - Injected remarkGfm and remarkMath into remarkPlugins, rehypeKatex into rehypePlugins.
+    - Rendered SVGs with `<div dangerouslySetInnerHTML={{ __html: svgString }} className="w-full h-auto" />`.
+  * Verified build & tests:
+    - npm run build: Built production bundle with KaTeX assets and Typography styles cleanly (0 errors).
+    - python backend/test_phase5.py: All Phase 5 tests passed.
+
+- 11. Groq json_validate_failed Crash Fix (backend/routers/notes.py):
+  * Resolved 400 json_validate_failed errors triggered by aggressive four-backslash escapes (\\\\frac) in LLM output.
+  * Replaced system_prompt with Python raw string (r"""...""") explicitly mandating:
+    - Exactly two backslashes for LaTeX (\\frac, \\Delta, \\rightarrow) and NEVER one or four.
+    - Standard \n for newlines.
+    - Unescaped dollar signs ($ and $$).
+  * Tested and validated with backend test suite and frontend build.
+
+================================================================================
+
+
+
 

@@ -58,24 +58,20 @@ export default function Header({ activeTab, setActiveTab, backendStatus }) {
               <span>Ledger History</span>
             </button>
 
-            {/* Extensibility Placeholder: Admin Notes (Coming Soon) */}
+            {/* Admin Notes & PDF Scanner Tab */}
             <button
               onClick={() => setActiveTab('admin-notes')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium transition-all ${
                 activeTab === 'admin-notes'
-                  ? 'bg-amber-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/30'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
               }`}
             >
-              <Clock className="w-3.5 h-3.5 text-amber-400" />
-              <span className="flex items-center gap-1">
-                Admin Notes
-                <span className="hidden md:inline text-[9px] bg-amber-900/60 text-amber-300 px-1 rounded border border-amber-700/50">
-                  Soon
-                </span>
-              </span>
+              <FileText className="w-4 h-4" />
+              <span>Admin Notes</span>
             </button>
           </nav>
+
 
           {/* Desktop status badge */}
           <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-slate-700 text-xs">

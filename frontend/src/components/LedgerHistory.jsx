@@ -186,7 +186,20 @@ export default function LedgerHistory() {
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
+        onclone: (clonedDoc) => {
+          const allElements = clonedDoc.getElementsByTagName('*');
+          for (let i = 0; i < allElements.length; i++) {
+            try {
+              if (window.getComputedStyle(allElements[i]).backgroundColor.includes('oklch')) {
+                allElements[i].style.backgroundColor = 'transparent';
+              }
+            } catch (e) {
+              // Ignore
+            }
+          }
+        },
       });
+
 
       const image = canvas.toDataURL('image/png');
       const link = document.createElement('a');
