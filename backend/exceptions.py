@@ -12,10 +12,25 @@ class ConfigurationError(MiddayMealError):
 
 
 class TranscriptionError(MiddayMealError):
-    """Raised when audio transcription fails or exceeds constraints."""
+    """Raised when audio transcription fails or encounters an upstream error."""
+    pass
+
+
+class AudioTooLargeError(TranscriptionError):
+    """Raised when uploaded audio exceeds maximum allowed file size."""
     pass
 
 
 class ExtractionError(MiddayMealError):
-    """Raised when LLM text-to-ledger extraction fails or exceeds constraints."""
+    """Raised when LLM text-to-ledger extraction fails or encounters an upstream error."""
+    pass
+
+
+class TranscriptTooLargeError(ExtractionError):
+    """Raised when transcript exceeds maximum allowed character length."""
+    pass
+
+
+class DuplicateLedgerError(MiddayMealError):
+    """Raised when attempting to create a ledger entry for a date that already exists."""
     pass

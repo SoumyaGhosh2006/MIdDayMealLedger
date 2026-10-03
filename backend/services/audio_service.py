@@ -3,7 +3,7 @@ from typing import BinaryIO, Union
 from groq import APIConnectionError, APITimeoutError, AuthenticationError, Groq
 
 from backend.config import settings
-from backend.exceptions import ConfigurationError, TranscriptionError
+from backend.exceptions import AudioTooLargeError, ConfigurationError, TranscriptionError
 
 MAX_AUDIO_SIZE_BYTES = 25 * 1024 * 1024  # 25 MB
 
@@ -34,20 +34,20 @@ def transcribe_audio(
             raise TranscriptionError(f"Audio file not found: {audio_file}")
         file_size = os.path.getsize(audio_file)
         if file_size > MAX_AUDIO_SIZE_BYTES:
-            raise TranscriptionError(f"Audio file size ({file_size} bytes) exceeds maximum limit of 25MB.")
+            raise AudioTooLargeError(f"Audio file size ({file_size} bytes) exceeds maximum limit of 25MB.")
         with open(audio_file, "rb") as f:
             file_bytes = f.read()
         payload = (os.path.basename(audio_file), file_bytes)
 
     elif isinstance(audio_file, bytes):
         if len(audio_file) > MAX_AUDIO_SIZE_BYTES:
-            raise TranscriptionError(f"Audio byte size ({len(audio_file)} bytes) exceeds maximum limit of 25MB.")
+            raise AudioTooLargeError(f"Audio byte size ({len(audio_file)} bytes) exceeds maximum limit of 25MB.")
         payload = (filename, audio_file)
 
     elif hasattr(audio_file, "read"):
         file_bytes = audio_file.read()
         if len(file_bytes) > MAX_AUDIO_SIZE_BYTES:
-            raise TranscriptionError(f"Audio stream size ({len(file_bytes)} bytes) exceeds maximum limit of 25MB.")
+            raise AudioTooLargeError(f"Audio stream size ({len(file_bytes)} bytes) exceeds maximum limit of 25MB.")
         payload = (filename, file_bytes)
 
     else:

@@ -6,7 +6,7 @@ from groq import APIConnectionError, APITimeoutError, AuthenticationError, Groq
 from pydantic import ValidationError
 
 from backend.config import settings
-from backend.exceptions import ConfigurationError, ExtractionError
+from backend.exceptions import ConfigurationError, ExtractionError, TranscriptTooLargeError
 from backend.schemas import LedgerCreate
 
 logger = logging.getLogger(__name__)
@@ -58,7 +58,7 @@ def extract_ledger_from_text(
     client-level timeout, and a logged 1-turn repair loop.
     """
     if len(transcribed_text) > MAX_TRANSCRIPT_LENGTH:
-        raise ExtractionError(
+        raise TranscriptTooLargeError(
             f"Transcript exceeds maximum allowed length of {MAX_TRANSCRIPT_LENGTH} characters "
             f"(received {len(transcribed_text)} characters)."
         )
@@ -131,3 +131,4 @@ def extract_ledger_from_text(
             raise ExtractionError(
                 f"LLM extraction repair failed to yield valid LedgerCreate JSON: {retry_err}"
             ) from retry_err
+
