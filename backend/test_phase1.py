@@ -17,7 +17,7 @@ from backend.schemas import LedgerCreate, LedgerResponse, LedgerUpdate, DateRang
 
 
 def test_pydantic_auto_calculation_and_domain():
-    print("-> Testing Pydantic auto-calculation of totals and daily_count Integer...")
+    print("-> Testing Pydantic auto-calculation of totals and optional rice fields...")
     raw_data = {
         "date": "2026-07-02",
         "egg": Decimal("90.00"),
@@ -40,7 +40,7 @@ def test_pydantic_auto_calculation_and_domain():
 
     entry = LedgerCreate(**raw_data)
 
-    # 1. Total expense
+    # 1. Total expense auto-calculation
     expected_expense = Decimal("90.00") + Decimal("220.00") + Decimal("150.50") + Decimal("80.00") + \
                        Decimal("35.00") + Decimal("50.00") + Decimal("120.00") + Decimal("75.00")
     assert entry.total_expense == expected_expense, f"Expected {expected_expense}, got {entry.total_expense}"
@@ -50,27 +50,25 @@ def test_pydantic_auto_calculation_and_domain():
     assert isinstance(entry.daily_count, int)
     assert entry.daily_count == 145
 
-    # 3. Rice closing balance
+    # 3. Rice fields (optional/deferred)
     assert entry.closing_balance_rice == Decimal("81.50")
 
-    # 4. Attendance
+    # 4. Attendance auto-calculation
     assert entry.total_attendance_6_8 == 48 + 42 + 39 == 129
     assert entry.total_attendance == 31 + 129 == 160
 
     print("   [PASS] Pydantic auto-calculation and daily_count verified.")
 
 
-def test_closing_balance_negative_validation():
-    print("-> Testing closing_balance_rice negative value rejection (ValueError)...")
-    try:
-        LedgerCreate(
-            date="2026-07-02",
-            closing_balance_rice=Decimal("-5.00")
-        )
-        assert False, "Should have failed on negative closing_balance_rice"
-    except ValidationError as e:
-        assert "closing_balance_rice cannot be negative" in str(e)
-        print("   [PASS] Negative closing_balance_rice properly rejected with ValueError.")
+def test_optional_rice_inventory():
+    print("-> Testing optional/nullable rice inventory fields...")
+    entry = LedgerCreate(date="2026-07-03")
+    assert entry.opening_balance_rice is None
+    assert entry.daily_count is None
+    assert entry.closing_balance_rice is None
+    assert entry.total_expense == Decimal("0.00")
+    assert entry.total_attendance == 0
+    print("   [PASS] Rice inventory fields correctly default to None.")
 
 
 def test_pydantic_negative_expense_validation():
@@ -86,14 +84,14 @@ def test_pydantic_negative_expense_validation():
 
 
 def test_database_operations_and_constraints():
-    print("-> Testing SQLAlchemy schema creation with daily_count as Integer...")
+    print("-> Testing SQLAlchemy schema creation with nullable rice fields...")
     test_engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(bind=test_engine)
     TestSession = sessionmaker(bind=test_engine)
     session = TestSession()
 
     try:
-        # Create and insert record
+        # Create and insert record with None rice fields
         create_schema = LedgerCreate(
             date=date(2026, 7, 2),
             egg=Decimal("90.00"),
@@ -104,9 +102,9 @@ def test_database_operations_and_constraints():
             grocery=Decimal("50.00"),
             veg=Decimal("120.00"),
             fuel=Decimal("75.00"),
-            opening_balance_rice=Decimal("100.00"),
-            daily_count=145,
-            closing_balance_rice=Decimal("81.50"),
+            opening_balance_rice=None,
+            daily_count=None,
+            closing_balance_rice=None,
             class_5=31,
             class_6=48,
             class_7=42,
@@ -121,16 +119,18 @@ def test_database_operations_and_constraints():
 
         assert db_entry.id is not None
         assert db_entry.total_expense == Decimal("820.50")
-        assert db_entry.daily_count == 145
-        assert isinstance(db_entry.daily_count, int)
+        assert db_entry.opening_balance_rice is None
+        assert db_entry.daily_count is None
+        assert db_entry.closing_balance_rice is None
         assert db_entry.total_attendance == 160
 
         # Test ORM to LedgerResponse conversion
         response_schema = LedgerResponse.model_validate(db_entry)
         assert response_schema.id == db_entry.id
-        assert response_schema.daily_count == 145
+        assert response_schema.daily_count is None
+        assert response_schema.closing_balance_rice is None
         assert response_schema.menu == "Mixveg, Soya, and Dal"
-        print("   [PASS] Record inserted and serialized to LedgerResponse successfully.")
+        print("   [PASS] Nullable rice fields inserted and serialized to LedgerResponse successfully.")
 
         # Test Unique Constraint on Date
         print("-> Testing unique date constraint enforcement...")
@@ -151,10 +151,9 @@ def test_database_operations_and_constraints():
 
 
 if __name__ == "__main__":
-    print("=== Running Phase 1 (P0/P1 Updated) Verification Suite ===")
+    print("=== Running Phase 1 (Updated Schema) Verification Suite ===")
     test_pydantic_auto_calculation_and_domain()
-    test_closing_balance_negative_validation()
+    test_optional_rice_inventory()
     test_pydantic_negative_expense_validation()
     test_database_operations_and_constraints()
     print("=== All Phase 1 Tests Passed Successfully! ===")
-

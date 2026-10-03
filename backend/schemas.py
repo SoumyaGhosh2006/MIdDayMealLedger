@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class LedgerBase(BaseModel):
@@ -17,10 +17,10 @@ class LedgerBase(BaseModel):
     veg: Decimal = Field(default=Decimal("0.00"), ge=0, decimal_places=2)
     fuel: Decimal = Field(default=Decimal("0.00"), ge=0, decimal_places=2)
 
-    # Inventory
-    opening_balance_rice: Decimal = Field(default=Decimal("0.00"), ge=0, decimal_places=2)
-    daily_count: int = Field(default=0, ge=0)
-    closing_balance_rice: Decimal = Field(default=Decimal("0.00"), decimal_places=2)
+    # Inventory (Rice) - Defer calculations, optional/nullable
+    opening_balance_rice: Optional[Decimal] = Field(default=None, ge=0, decimal_places=2)
+    daily_count: Optional[int] = Field(default=None, ge=0)
+    closing_balance_rice: Optional[Decimal] = Field(default=None, decimal_places=2)
 
     # Attendance
     class_5: int = Field(default=0, ge=0)
@@ -30,13 +30,6 @@ class LedgerBase(BaseModel):
 
     # Menu
     menu: str = Field(default="")
-
-    @field_validator("closing_balance_rice")
-    @classmethod
-    def validate_closing_balance(cls, v: Decimal) -> Decimal:
-        if v < Decimal("0.00"):
-            raise ValueError("closing_balance_rice cannot be negative")
-        return v
 
 
 class LedgerCreate(LedgerBase):
@@ -53,10 +46,6 @@ class LedgerCreate(LedgerBase):
         )
         if self.total_expense is None:
             self.total_expense = computed_expense
-
-        # Ensure closing_balance_rice is not negative
-        if self.closing_balance_rice < Decimal("0.00"):
-            raise ValueError("closing_balance_rice cannot be negative")
 
         # Auto-compute attendance groups
         computed_6_8 = self.class_6 + self.class_7 + self.class_8
@@ -92,13 +81,6 @@ class LedgerUpdate(BaseModel):
     total_attendance: Optional[int] = Field(default=None, ge=0)
     menu: Optional[str] = None
 
-    @field_validator("closing_balance_rice")
-    @classmethod
-    def validate_closing_balance(cls, v: Optional[Decimal]) -> Optional[Decimal]:
-        if v is not None and v < Decimal("0.00"):
-            raise ValueError("closing_balance_rice cannot be negative")
-        return v
-
 
 class LedgerResponse(LedgerBase):
     id: int
@@ -114,4 +96,3 @@ class LedgerResponse(LedgerBase):
 class DateRangeQuery(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
-

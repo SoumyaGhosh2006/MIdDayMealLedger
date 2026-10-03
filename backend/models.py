@@ -1,5 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Optional
 from sqlalchemy import Date, DateTime, Integer, Numeric, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -23,10 +24,10 @@ class DailyLedger(Base):
     fuel: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("0.00"), nullable=False)
     total_expense: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("0.00"), nullable=False)
 
-    # Inventory
-    opening_balance_rice: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("0.00"), nullable=False)
-    daily_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    closing_balance_rice: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("0.00"), nullable=False)
+    # Inventory (Rice) - Nullable per domain deferral
+    opening_balance_rice: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True, default=None)
+    daily_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, default=None)
+    closing_balance_rice: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True, default=None)
 
     # Attendance (Student counts)
     class_5: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
@@ -47,4 +48,3 @@ class DailyLedger(Base):
         onupdate=func.now(),
         nullable=False
     )
-

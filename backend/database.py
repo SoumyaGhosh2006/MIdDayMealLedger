@@ -1,14 +1,9 @@
-import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
-from dotenv import load_dotenv
 
-load_dotenv()
+from backend.config import settings
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "sqlite:///./middaymeal.db"
-)
+DATABASE_URL = settings.DATABASE_URL
 
 # Accommodate SQLite concurrency parameter if running locally with SQLite
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
@@ -16,7 +11,7 @@ connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite")
 engine = create_engine(
     DATABASE_URL,
     connect_args=connect_args,
-    echo=os.getenv("SQL_ECHO", "False").lower() in ("true", "1", "yes")
+    echo=settings.SQL_ECHO
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
