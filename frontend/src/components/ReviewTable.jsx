@@ -440,7 +440,7 @@ export default function ReviewTable({
 
               <div className="bg-amber-50/40 p-2.5 rounded-lg border border-amber-200/60">
                 <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                  Daily Rice Count (Headcount)
+                  Daily Consumption
                 </label>
                 <input
                   type="number"

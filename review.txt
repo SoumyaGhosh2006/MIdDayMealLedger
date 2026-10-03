@@ -19,15 +19,15 @@ Summary of Implementation:
   * Added test_extract_text_success to test_phase3.py test suite.
 
 - 3. Frontend API Integration (frontend/src/api.js):
-  * Added extractText(text, referenceDate) method explicitly defined inside export const api = { ... } and as named export export async function extractText(...).
-  * Handles JSON POST to /api/ledger/extract-text.
-  * Returns validated LedgerCreate data or throws formatted error.
+  * Explicitly defined extractText both as a named export and inside export const api = { ... } as well as export default api.
+  * Sends POST to /api/ledger/extract-text with JSON payload { text, reference_date }.
+  * ReviewTable.jsx imports both api and extractText, with defensive fallback: const extractFn = api?.extractText || extractText.
 
 - 4. Editable Transcript & Re-extraction Feature (frontend/src/components/ReviewTable.jsx):
   * Replaced static text display with an editable <textarea> bound to React state editableTranscript.
   * Synchronizes automatically with incoming voice transcription.
   * Added "Re-extract Data from Text" button with loading spinner state (isReExtracting).
-  * Calls api.extractText(editableTranscript, formData.date) with fallback to named extractText import and overwrites form state with the newly extracted ledger data.
+  * Calls extractFn(editableTranscript, formData.date) and overwrites form state with the newly extracted ledger data.
 
 - 5. Audio MIME Type Sanitization (backend/routers/ledger.py):
   * Extracted base MIME type before checking against SUPPORTED_AUDIO_TYPES:
@@ -35,15 +35,29 @@ Summary of Implementation:
   * Resolves 415 Unsupported Media Type errors caused by browser MediaRecorder codecs parameters (e.g., audio/webm;codecs=opus).
   * Added test_process_voice_with_codec_parameters to backend/test_phase3.py.
 
-- 6. Government Audit CSV Export Feature (frontend/src/components/LedgerHistory.jsx):
-  * Added "Download CSV" action button with lucide-react Download icon placed next to the Refresh button.
-  * Implemented handleExportCSV converting the active ledgers state into an audit-compliant CSV format with double-quote escaping.
-  * Includes all headers: Date, Menu, 8 itemized expenses, Total Expense, Class 5-8 attendance, 6-8 total, cumulative attendance, and Rice stock metrics.
-  * Creates Blob([csvContent], { type: 'text/csv;charset=utf-8;' }) object URL, triggers midday_meal_ledger.csv download via dynamic DOM anchor, and cleans up object URL immediately.
+- 6. Reordered Government Audit CSV Export Feature (frontend/src/components/LedgerHistory.jsx):
+  * Column reordering: Positioned Opening Rice, Daily Consumption, and Closing Rice immediately following Total Expense and preceding Class 5.
+  * Generated RFC-4180 compliant CSV format with properly escaped text values.
+  * Download triggered programmatically via dynamic anchor.
 
-- 7. Verification & Test Status:
-  * npm run build: Built cleanly in 644ms (1902 modules transformed, 0 errors).
-  * python backend/test_phase3.py: All 10 test cases passed including codec parameter tests.
-  * python backend/test_phase2.py: All 10 test cases passed including live Groq verification.
+- 7. Handwritten Analog Ledger Export Feature (frontend/src/components/HandwrittenLedger.jsx, LedgerHistory.jsx):
+  * Installed html2canvas library.
+  * Created HandwrittenLedger component mounted offscreen at -left-[9999px].
+  * Styled with CSS repeating linear-gradient simulating ruled school notebook paper.
+  * Imported and applied Google Font 'Caveat', cursive in dark ink blue (#0f172a).
+  * Added jitter realism transforms: rotate(${Math.random() * 2 - 1}deg) translateY(${Math.random() * 2 - 1}px) per cell.
+  * Added "Download Handwritten" button in LedgerHistory calling html2canvas at scale 2 to export high-resolution PNG.
+
+- 8. Dynamic Date-Range Filename Generator (frontend/src/components/LedgerHistory.jsx):
+  * Implemented formatDateForFilename with ordinal day suffix (e.g., 3rd, 4th, 21st) and short month name:
+    - Empty: MidDayMeal
+    - Single day: MidDayMeal_[date] (e.g., MidDayMeal_3rdOct2026)
+    - Date range: MidDayMeal_[start_date]_to_[end_date] (e.g., MidDayMeal_3rdOct2026_to_4thOct2026)
+  * Applied to both CSV spreadsheet (.csv) and Handwritten Analog image (.png).
+
+- 9. Verification & Test Status:
+  * npm run build: Built cleanly in 775ms (1904 modules transformed, 0 errors).
+  * python backend/test_phase3.py: All 12 test cases passed.
 
 ================================================================================
+

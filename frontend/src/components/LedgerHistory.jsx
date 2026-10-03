@@ -11,9 +11,12 @@ import {
   ChevronUp, 
   RefreshCw,
   AlertCircle,
-  Download
+  Download,
+  PenTool
 } from 'lucide-react';
+import html2canvas from 'html2canvas';
 import { api } from '../api';
+import HandwrittenLedger from './HandwrittenLedger';
 
 export default function LedgerHistory() {
   const [ledgers, setLedgers] = useState([]);
@@ -22,6 +25,7 @@ export default function LedgerHistory() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [expandedId, setExpandedId] = useState(null);
+  const [isExportingHandwritten, setIsExportingHandwritten] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -70,6 +74,42 @@ export default function LedgerHistory() {
     };
   }, [ledgers]);
 
+  const formatDateForFilename = (dateStr) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+
+    const year = parts[0];
+    const monthIndex = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthName = months[monthIndex] || parts[1];
+
+    const getOrdinalSuffix = (n) => {
+      const j = n % 10;
+      const k = n % 100;
+      if (j === 1 && k !== 11) return 'st';
+      if (j === 2 && k !== 12) return 'nd';
+      if (j === 3 && k !== 13) return 'rd';
+      return 'th';
+    };
+
+    return `${day}${getOrdinalSuffix(day)}${monthName}${year}`;
+  };
+
+  const getExportBaseFilename = () => {
+    if (!ledgers || ledgers.length === 0) return 'MidDayMeal';
+    const dates = ledgers.map((l) => l.date).filter(Boolean).sort();
+    if (dates.length === 0) return 'MidDayMeal';
+    const minDate = dates[0];
+    const maxDate = dates[dates.length - 1];
+    if (minDate === maxDate) {
+      return `MidDayMeal_${formatDateForFilename(minDate)}`;
+    }
+    return `MidDayMeal_${formatDateForFilename(minDate)}_to_${formatDateForFilename(maxDate)}`;
+  };
+
   const handleExportCSV = () => {
     if (!ledgers || ledgers.length === 0) return;
 
@@ -85,15 +125,15 @@ export default function LedgerHistory() {
       'Vegetables (INR)',
       'Fuel (INR)',
       'Total Expense (INR)',
+      'Opening Rice (Kg)',
+      'Daily Consumption',
+      'Closing Rice (Kg)',
       'Class 5',
       'Class 6',
       'Class 7',
       'Class 8',
       'Total Attendance 6-8',
       'Total Attendance',
-      'Opening Rice (Kg)',
-      'Daily Count',
-      'Closing Rice (Kg)',
     ];
 
     const rows = ledgers.map((row) => [
@@ -108,15 +148,15 @@ export default function LedgerHistory() {
       parseFloat(row.veg || 0).toFixed(2),
       parseFloat(row.fuel || 0).toFixed(2),
       parseFloat(row.total_expense || 0).toFixed(2),
+      row.opening_balance_rice != null ? parseFloat(row.opening_balance_rice).toFixed(2) : '',
+      row.daily_count != null ? row.daily_count : '',
+      row.closing_balance_rice != null ? parseFloat(row.closing_balance_rice).toFixed(2) : '',
       row.class_5 ?? 0,
       row.class_6 ?? 0,
       row.class_7 ?? 0,
       row.class_8 ?? 0,
       row.total_attendance_6_8 ?? 0,
       row.total_attendance ?? 0,
-      row.opening_balance_rice != null ? parseFloat(row.opening_balance_rice).toFixed(2) : '',
-      row.daily_count != null ? row.daily_count : '',
-      row.closing_balance_rice != null ? parseFloat(row.closing_balance_rice).toFixed(2) : '',
     ]);
 
     const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
@@ -125,11 +165,41 @@ export default function LedgerHistory() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', 'midday_meal_ledger.csv');
+    link.setAttribute('download', `${getExportBaseFilename()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  const handleExportHandwritten = async () => {
+    if (!ledgers || ledgers.length === 0) return;
+    const element = document.getElementById('handwritten-ledger-capture');
+    if (!element) return;
+
+    setIsExportingHandwritten(true);
+    try {
+      await document.fonts?.ready;
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+      });
+
+      const image = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = image;
+      link.setAttribute('download', `${getExportBaseFilename()}.png`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Failed to export handwritten ledger:', err);
+    } finally {
+      setIsExportingHandwritten(false);
+    }
   };
 
   return (
@@ -146,7 +216,7 @@ export default function LedgerHistory() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2 self-start md:self-auto">
+          <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
             <button
               onClick={handleExportCSV}
               disabled={loading || ledgers.length === 0}
@@ -155,6 +225,25 @@ export default function LedgerHistory() {
             >
               <Download className="w-3.5 h-3.5 text-emerald-700" />
               <span>Download CSV</span>
+            </button>
+
+            <button
+              onClick={handleExportHandwritten}
+              disabled={loading || ledgers.length === 0 || isExportingHandwritten}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              title="Download authentic ruled-notebook handwritten ledger PNG"
+            >
+              {isExportingHandwritten ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                  <span>Generating PNG...</span>
+                </>
+              ) : (
+                <>
+                  <PenTool className="w-3.5 h-3.5 text-indigo-700" />
+                  <span>Download Handwritten</span>
+                </>
+              )}
             </button>
 
             <button
@@ -445,7 +534,7 @@ export default function LedgerHistory() {
                                         </span>
                                       </div>
                                       <div className="bg-white p-2 rounded border border-slate-200">
-                                        <span className="text-[10px] text-slate-500 block">Daily Count</span>
+                                        <span className="text-[10px] text-slate-500 block">Daily Consumption</span>
                                         <span className="font-mono font-bold text-slate-800">
                                           {row.daily_count != null ? row.daily_count : '—'}
                                         </span>
@@ -578,6 +667,9 @@ export default function LedgerHistory() {
           </>
         )}
       </div>
+
+      {/* Offscreen Handwritten Ledger Renderer for Image Capture */}
+      <HandwrittenLedger ledgers={ledgers} />
     </div>
   );
 }
