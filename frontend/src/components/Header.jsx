@@ -12,15 +12,9 @@ export default function Header({ activeTab, setActiveTab, backendStatus }) {
               <BookOpen className="w-5 h-5 text-white" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-base sm:text-lg font-bold tracking-tight text-white m-0 p-0">
-                  Midday Meal Ledger
-                </h1>
-                <span className="text-[10px] uppercase font-semibold tracking-wider px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
-                  PM POSHAN
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 m-0">Government School Digital Register</p>
+              <h1 className="text-base sm:text-lg font-bold tracking-tight text-white m-0 p-0">
+                Midday Meal Ledger
+              </h1>
             </div>
           </div>
 

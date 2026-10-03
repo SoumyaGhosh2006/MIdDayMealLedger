@@ -10,7 +10,8 @@ import {
   ChevronDown, 
   ChevronUp, 
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Download
 } from 'lucide-react';
 import { api } from '../api';
 
@@ -69,6 +70,68 @@ export default function LedgerHistory() {
     };
   }, [ledgers]);
 
+  const handleExportCSV = () => {
+    if (!ledgers || ledgers.length === 0) return;
+
+    const headers = [
+      'Date',
+      'Menu',
+      'Egg (INR)',
+      'Oil (INR)',
+      'Dal (INR)',
+      'Soya Potato (INR)',
+      'Masala (INR)',
+      'Grocery (INR)',
+      'Vegetables (INR)',
+      'Fuel (INR)',
+      'Total Expense (INR)',
+      'Class 5',
+      'Class 6',
+      'Class 7',
+      'Class 8',
+      'Total Attendance 6-8',
+      'Total Attendance',
+      'Opening Rice (Kg)',
+      'Daily Count',
+      'Closing Rice (Kg)',
+    ];
+
+    const rows = ledgers.map((row) => [
+      row.date || '',
+      `"${(row.menu || '').replace(/"/g, '""')}"`,
+      parseFloat(row.egg || 0).toFixed(2),
+      parseFloat(row.oil || 0).toFixed(2),
+      parseFloat(row.dal || 0).toFixed(2),
+      parseFloat(row.soya_potato || 0).toFixed(2),
+      parseFloat(row.masala || 0).toFixed(2),
+      parseFloat(row.grocery || 0).toFixed(2),
+      parseFloat(row.veg || 0).toFixed(2),
+      parseFloat(row.fuel || 0).toFixed(2),
+      parseFloat(row.total_expense || 0).toFixed(2),
+      row.class_5 ?? 0,
+      row.class_6 ?? 0,
+      row.class_7 ?? 0,
+      row.class_8 ?? 0,
+      row.total_attendance_6_8 ?? 0,
+      row.total_attendance ?? 0,
+      row.opening_balance_rice != null ? parseFloat(row.opening_balance_rice).toFixed(2) : '',
+      row.daily_count != null ? row.daily_count : '',
+      row.closing_balance_rice != null ? parseFloat(row.closing_balance_rice).toFixed(2) : '',
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'midday_meal_ledger.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header and Filter Controls */}
@@ -76,21 +139,33 @@ export default function LedgerHistory() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
           <div>
             <h2 className="text-base sm:text-lg font-bold text-slate-900 m-0">
-              Government School Ledger History
+              Ledger History
             </h2>
             <p className="text-xs text-slate-500 m-0 mt-0.5">
-              Chronological log of verified daily expenditures and midday meal attendance.
+              Chronological log of verified daily expenditures and meal attendance.
             </p>
           </div>
 
-          <button
-            onClick={loadData}
-            disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 self-start md:self-auto transition-colors"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-emerald-600' : ''}`} />
-            <span>Refresh</span>
-          </button>
+          <div className="flex items-center gap-2 self-start md:self-auto">
+            <button
+              onClick={handleExportCSV}
+              disabled={loading || ledgers.length === 0}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              title="Download ledger records as CSV for government audits"
+            >
+              <Download className="w-3.5 h-3.5 text-emerald-700" />
+              <span>Download CSV</span>
+            </button>
+
+            <button
+              onClick={loadData}
+              disabled={loading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-emerald-600' : ''}`} />
+              <span>Refresh</span>
+            </button>
+          </div>
         </div>
 
         {/* Date Filter Bar */}

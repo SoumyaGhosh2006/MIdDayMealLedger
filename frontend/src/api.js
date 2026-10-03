@@ -1,6 +1,28 @@
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/ledger';
 const HEALTH_URL = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api/ledger', '') : 'http://localhost:8000') + '/health';
 
+/**
+ * Re-extracts structured ledger data from edited or raw text via POST /api/ledger/extract-text.
+ * Sends JSON body: { text, reference_date: referenceDate }
+ * Returns: LedgerCreate
+ */
+export async function extractText(text, referenceDate = null) {
+  const payload = { text };
+  if (referenceDate) payload.reference_date = referenceDate;
+
+  const res = await fetch(`${BASE_URL}/extract-text`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(body.detail || body.error || `Extraction failed (HTTP ${res.status})`);
+  }
+  return body;
+}
+
 export const api = {
   /**
    * Health check probe to verify backend & DB connectivity.
@@ -35,6 +57,12 @@ export const api = {
     }
     return body;
   },
+
+  /**
+   * Re-extracts structured ledger data from edited or raw text.
+   * Exported on the api object as api.extractText.
+   */
+  extractText,
 
   /**
    * Persists a verified LedgerCreate payload into the relational database.
@@ -75,3 +103,5 @@ export const api = {
     return body;
   },
 };
+
+export default api;

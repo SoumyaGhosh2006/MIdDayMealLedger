@@ -85,6 +85,28 @@ def test_process_voice_success():
         print("   [PASS] Voice processing returned ProcessVoiceResponse with transcript and LedgerCreate.")
 
 
+def test_process_voice_with_codec_parameters():
+    print("-> Testing POST /api/ledger/process-voice with complex MIME type (audio/webm;codecs=opus)...")
+    fake_audio = io.BytesIO(b"fake audio data bytes")
+    files = {"file": ("recording.webm", fake_audio, "audio/webm;codecs=opus")}
+
+    mocked_ledger = LedgerCreate(
+        date=date(2026, 7, 2),
+        egg=Decimal("90.00"),
+        oil=Decimal("220.00")
+    )
+
+    with patch("backend.routers.ledger.transcribe_audio") as mock_transcribe, \
+         patch("backend.routers.ledger.extract_ledger_from_text") as mock_extract:
+        mock_transcribe.return_value = "Today is July 2nd. Egg was 90, oil 220."
+        mock_extract.return_value = mocked_ledger
+
+        response = client.post("/api/ledger/process-voice", files=files)
+        assert response.status_code == 200
+        print("   [PASS] Complex MIME type audio/webm;codecs=opus successfully accepted.")
+
+
+
 def test_process_voice_unsupported_media_type():
     print("-> Testing POST /api/ledger/process-voice with 415 Unsupported Media Type...")
     fake_pdf = io.BytesIO(b"%PDF-1.4 fake pdf")
@@ -198,14 +220,39 @@ def test_ledger_get_and_date_validation():
     print("   [PASS] Limit and offset pagination verified.")
 
 
+def test_extract_text_success():
+    print("-> Testing POST /api/ledger/extract-text success case...")
+    mocked_ledger = LedgerCreate(
+        date=date(2026, 7, 5),
+        egg=Decimal("120.00"),
+        oil=Decimal("180.00"),
+        menu="Rice and Egg"
+    )
+    with patch("backend.routers.ledger.extract_ledger_from_text") as mock_extract:
+        mock_extract.return_value = mocked_ledger
+        response = client.post(
+            "/api/ledger/extract-text",
+            json={"text": "Today is July 5th. Egg 120, oil 180.", "reference_date": "2026-07-05"}
+        )
+        assert response.status_code == 200
+        res_json = response.json()
+        assert res_json["date"] == "2026-07-05"
+        assert res_json["egg"] == "120.00"
+        assert res_json["oil"] == "180.00"
+        assert res_json["total_expense"] == "300.00"
+        print("   [PASS] Text-only extraction returned validated LedgerCreate JSON.")
+
+
 if __name__ == "__main__":
     print("=== Running Phase 3 API Layer Verification Suite ===")
     test_health_check()
     test_process_voice_success()
+    test_process_voice_with_codec_parameters()
     test_process_voice_unsupported_media_type()
     test_process_voice_audio_too_large()
     test_process_voice_transcript_too_large()
     test_process_voice_upstream_failure()
+    test_extract_text_success()
     test_ledger_crud_and_duplicate_conflict()
     test_ledger_get_and_date_validation()
     print("=== All Phase 3 Tests Passed Successfully! ===")

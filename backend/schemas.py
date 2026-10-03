@@ -96,3 +96,9 @@ class LedgerResponse(LedgerBase):
 class DateRangeQuery(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
+
+
+class ExtractTextRequest(BaseModel):
+    text: str
+    reference_date: Optional[date] = None
+

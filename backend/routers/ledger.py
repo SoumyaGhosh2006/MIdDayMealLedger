@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
-from backend.schemas import LedgerCreate, LedgerResponse
+from backend.schemas import ExtractTextRequest, LedgerCreate, LedgerResponse
 from backend.services.audio_service import transcribe_audio
 from backend.services.ledger_service import create_ledger_entry, list_ledger_entries
 from backend.services.llm_service import extract_ledger_from_text
@@ -52,14 +52,16 @@ def process_voice_entry(
     4. Extracts structured ledger data via Groq LLM
     5. Returns both transcript and validated LedgerCreate for user confirmation
     """
-    if file.content_type and file.content_type.lower() not in SUPPORTED_AUDIO_TYPES:
-        raise HTTPException(
-            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail=(
-                f"Unsupported audio type '{file.content_type}'. "
-                f"Supported types: {', '.join(sorted(SUPPORTED_AUDIO_TYPES))}"
+    if file.content_type:
+        base_mime_type = file.content_type.split(";")[0].strip().lower()
+        if base_mime_type not in SUPPORTED_AUDIO_TYPES:
+            raise HTTPException(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                detail=(
+                    f"Unsupported audio type '{file.content_type}'. "
+                    f"Supported types: {', '.join(sorted(SUPPORTED_AUDIO_TYPES))}"
+                )
             )
-        )
 
     # Read synchronously from the underlying SpooledTemporaryFile
     audio_bytes = file.file.read()
@@ -70,6 +72,21 @@ def process_voice_entry(
         transcription=transcription_text,
         data=extracted_data
     )
+
+
+@router.post(
+    "/extract-text",
+    response_model=LedgerCreate,
+    status_code=status.HTTP_200_OK,
+    summary="Extract structured ledger data from raw text"
+)
+def extract_text_entry(request: ExtractTextRequest):
+    """
+    Extracts structured ledger data from raw or corrected text.
+    Runs in external threadpool and returns the validated LedgerCreate payload.
+    """
+    return extract_ledger_from_text(request.text, reference_date=request.reference_date)
+
 
 
 @router.post(

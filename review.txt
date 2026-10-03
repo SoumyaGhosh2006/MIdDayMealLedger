@@ -1,70 +1,49 @@
 ================================================================================
-PHASE 4 FRONTEND ARCHITECTURE & IMPLEMENTATION REVIEW
+PHASE 4 FRONTEND ARCHITECTURE & RE-EXTRACTION UPDATE REVIEW
 ================================================================================
 
 Summary of Implementation:
-- 1. Styling & Tooling Architecture (frontend/vite.config.js, frontend/src/index.css):
-  * Integrated Tailwind CSS v4 using official Vite plugin `@tailwindcss/vite` and `@import "tailwindcss";`.
-  * Configured modern, sleek typography and institutional styling without AI chat/bot UI tropes.
-  * Installed `lucide-react` for clean, professional institutional icons.
-  * Formatted HTML title and metadata for PM POSHAN Government School Register.
+- 1. Styling, Title & De-branding (frontend/src/components/Header.jsx, frontend/src/App.jsx, frontend/index.html):
+  * Completely removed all "PM POSHAN" badges, tags, and text.
+  * Completely removed "Government School Digital Register" subtitle.
+  * Completely removed footer text mentioning "PM POSHAN National Scheme..." and "Audit Guidelines".
+  * Main title kept strictly as "Midday Meal Ledger".
+  * Cleaned document title in index.html to "Midday Meal Ledger".
+  * Cleaned history header to "Ledger History".
 
-- 2. API Integration Layer (frontend/src/api.js):
-  * `checkHealth()`: Queries `/health` with automatic fallback to verify backend DB connectivity.
-  * `processVoice(audioBlob, filename, referenceDate)`: Dispatches multipart/form-data with `recording.webm` (MIME `audio/webm`) and optional `reference_date` to `POST /api/ledger/process-voice`. Returns `{ transcription, data }`.
-  * `saveLedger(ledgerData)`: Persists finalized `LedgerCreate` payload to `POST /api/ledger/`. Specifically intercepts and handles HTTP 409 `DuplicateLedgerError`.
-  * `fetchLedgers(startDate, endDate, limit, offset)`: Queries `GET /api/ledger/` with date bounds and pagination parameters.
+- 2. Backend Text-Only Extraction Endpoint (backend/schemas.py, backend/routers/ledger.py):
+  * Added Pydantic schema ExtractTextRequest(text: str, reference_date: Optional[date] = None).
+  * Added synchronous endpoint POST /api/ledger/extract-text accepting ExtractTextRequest.
+  * Invokes extract_ledger_from_text(request.text, reference_date=request.reference_date) in external threadpool to prevent blocking the FastAPI event loop.
+  * Returns validated LedgerCreate payload.
+  * Added test_extract_text_success to test_phase3.py test suite.
 
-- 3. Institutional Header & Status (frontend/src/components/Header.jsx):
-  * PM POSHAN branding badge and Government School Register subtitle.
-  * Primary navigation tabs:
-    - Daily Entry
-    - Ledger History
-    - Admin Notes (Upcoming Feature Preview)
-  * Real-time backend connectivity indicator (Online pulse vs. Offline badge) polled every 30 seconds.
+- 3. Frontend API Integration (frontend/src/api.js):
+  * Added extractText(text, referenceDate) method explicitly defined inside export const api = { ... } and as named export export async function extractText(...).
+  * Handles JSON POST to /api/ledger/extract-text.
+  * Returns validated LedgerCreate data or throws formatted error.
 
-- 4. Voice Dictation Component (frontend/src/components/AudioRecorder.jsx):
-  * Utilizes browser `MediaRecorder` targeting `audio/webm;codecs=opus` with browser capability fallbacks.
-  * Reference date selector defaulting to current date.
-  * Pulsing recording visual indicator, live recording duration timer (mm:ss), and playback audio element.
-  * Direct file upload fallback for pre-recorded audio files (.webm, .m4a, .wav, .mp3).
-  * Error boundary handling microphone permission denials (`NotAllowedError`).
-  * Async loading state with spinner during Whisper & Groq ledger extraction.
+- 4. Editable Transcript & Re-extraction Feature (frontend/src/components/ReviewTable.jsx):
+  * Replaced static text display with an editable <textarea> bound to React state editableTranscript.
+  * Synchronizes automatically with incoming voice transcription.
+  * Added "Re-extract Data from Text" button with loading spinner state (isReExtracting).
+  * Calls api.extractText(editableTranscript, formData.date) with fallback to named extractText import and overwrites form state with the newly extracted ledger data.
 
-- 5. High-Contrast Review & Commit Table (frontend/src/components/ReviewTable.jsx):
-  * Voice Recognition Transcript Card ("What Was Heard") prominently displayed.
-  * Expense Breakdown with native decimal inputs (`type="number" step="0.01" min="0"`):
-    - Egg, Oil, Dal, Soya/Potato, Masala, Grocery, Veg, Fuel.
-    - Live reactive client-side recalculation of `total_expense`.
-  * Attendance Headcount with whole integer inputs (`type="number" step="1" min="0"`):
-    - Class 5, Class 6, Class 7, Class 8.
-    - Live client-side recalculation of `total_attendance_6_8` and `total_attendance`.
-  * Rice Stock & Inventory (`opening_balance_rice`, `daily_count`, `closing_balance_rice`):
-    - Nullable/optional fields with deferred domain calculations as per architectural standard.
-  * Date picker and Menu description fields.
-  * 409 Conflict rejection handling and actionable error display.
+- 5. Audio MIME Type Sanitization (backend/routers/ledger.py):
+  * Extracted base MIME type before checking against SUPPORTED_AUDIO_TYPES:
+    base_mime_type = file.content_type.split(";")[0].strip().lower()
+  * Resolves 415 Unsupported Media Type errors caused by browser MediaRecorder codecs parameters (e.g., audio/webm;codecs=opus).
+  * Added test_process_voice_with_codec_parameters to backend/test_phase3.py.
 
-- 6. Continuous Ledger History (frontend/src/components/LedgerHistory.jsx):
-  * Date range filter controls (From Date, To Date, Apply Filter, Reset).
-  * Aggregated summary KPI metric cards:
-    - Total Entries Logged
-    - Total Expenditure (₹)
-    - Total Student Meals Served
-    - Average Daily Expenditure
-  * Dual-mode responsive layout:
-    - Desktop: High-density administrative table with expandable row accordions showing full 8-item expense breakdown and rice inventory.
-    - Mobile (360px - 420px): High-contrast card view with quick totals and expandable itemized breakdown.
+- 6. Government Audit CSV Export Feature (frontend/src/components/LedgerHistory.jsx):
+  * Added "Download CSV" action button with lucide-react Download icon placed next to the Refresh button.
+  * Implemented handleExportCSV converting the active ledgers state into an audit-compliant CSV format with double-quote escaping.
+  * Includes all headers: Date, Menu, 8 itemized expenses, Total Expense, Class 5-8 attendance, 6-8 total, cumulative attendance, and Rice stock metrics.
+  * Creates Blob([csvContent], { type: 'text/csv;charset=utf-8;' }) object URL, triggers midday_meal_ledger.csv download via dynamic DOM anchor, and cleans up object URL immediately.
 
-- 7. Extensibility Placeholder (frontend/src/components/AdminNotesPlaceholder.jsx):
-  * Institutional module preview showcasing tomorrow's voice-to-text administrative memo feature (inspection notes, ration shortage dispatches, audit exports).
-
-- 8. Application Shell & State Machine (frontend/src/App.jsx):
-  * State management coordinating dictation flow, draft review, history, and notifications.
-  * Allows creating entries manually from scratch without voice dictation.
-  * Global toast alerts for database commits and error reporting.
-
-- 9. Verification & Build:
-  * `npm run build` executed cleanly in 687ms with zero errors (1902 modules transformed).
-  * Backend regression suites (`test_phase2.py`, `test_phase3.py`) passed at 100%.
+- 7. Verification & Test Status:
+  * npm run build: Built cleanly in 644ms (1902 modules transformed, 0 errors).
+  * python backend/test_phase3.py: All 10 test cases passed including codec parameter tests.
+  * python backend/test_phase2.py: All 10 test cases passed including live Groq verification.
 
 ================================================================================

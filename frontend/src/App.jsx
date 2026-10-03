@@ -161,19 +161,19 @@ export default function App() {
         {activeTab === 'admin-notes' && <AdminNotesPlaceholder />}
       </main>
 
-      {/* Institutional Footer */}
+      {/* Footer */}
       <footer className="bg-slate-900 text-slate-400 text-xs border-t border-slate-800 py-6 mt-12">
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
           <div>
             <p className="font-semibold text-slate-300 m-0">
-              PM POSHAN National Scheme for Mid-Day Meals in Schools
+              Midday Meal Ledger
             </p>
             <p className="text-[11px] text-slate-500 m-0 mt-0.5">
-              Automated Financial Ledger & Voice-Driven Record System • Production Release v1.0
+              Automated Financial Ledger & Voice-Driven Record System
             </p>
           </div>
           <div className="text-[11px] text-slate-500">
-            Compliant with Government School Food & Financial Audit Guidelines
+            Secure Digital Register
           </div>
         </div>
       </footer>

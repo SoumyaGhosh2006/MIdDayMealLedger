@@ -10,9 +10,10 @@ import {
   Utensils, 
   Calendar,
   Save,
-  MessageSquare
+  MessageSquare,
+  Sparkles
 } from 'lucide-react';
-import { api } from '../api';
+import { api, extractText } from '../api';
 
 const EXPENSE_FIELDS = [
   { key: 'egg', label: 'Egg', defaultVal: '0.00' },
@@ -62,7 +63,16 @@ export default function ReviewTable({
   });
 
   const [isSaving, setIsSaving] = useState(false);
+  const [isReExtracting, setIsReExtracting] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [editableTranscript, setEditableTranscript] = useState(transcription || '');
+
+  // Synchronize transcript if prop updates
+  useEffect(() => {
+    if (transcription != null) {
+      setEditableTranscript(transcription);
+    }
+  }, [transcription]);
 
   // Synchronize when initialData prop changes
   useEffect(() => {
@@ -113,6 +123,41 @@ export default function ReviewTable({
     return { c5, c6, c7, c8, total_6_8, total };
   }, [formData.class_5, formData.class_6, formData.class_7, formData.class_8]);
 
+  const handleReExtract = async () => {
+    if (!editableTranscript.trim()) return;
+    setIsReExtracting(true);
+    setErrorMessage(null);
+
+    try {
+      const extractFn = api?.extractText || extractText;
+      const extracted = await extractFn(editableTranscript.trim(), formData.date);
+      setFormData({
+        date: extracted.date || formData.date,
+        menu: extracted.menu || '',
+        egg: extracted.egg != null ? String(extracted.egg) : '0.00',
+        oil: extracted.oil != null ? String(extracted.oil) : '0.00',
+        dal: extracted.dal != null ? String(extracted.dal) : '0.00',
+        soya_potato: extracted.soya_potato != null ? String(extracted.soya_potato) : '0.00',
+        masala: extracted.masala != null ? String(extracted.masala) : '0.00',
+        grocery: extracted.grocery != null ? String(extracted.grocery) : '0.00',
+        veg: extracted.veg != null ? String(extracted.veg) : '0.00',
+        fuel: extracted.fuel != null ? String(extracted.fuel) : '0.00',
+        class_5: extracted.class_5 != null ? String(extracted.class_5) : '0',
+        class_6: extracted.class_6 != null ? String(extracted.class_6) : '0',
+        class_7: extracted.class_7 != null ? String(extracted.class_7) : '0',
+        class_8: extracted.class_8 != null ? String(extracted.class_8) : '0',
+        opening_balance_rice: extracted.opening_balance_rice != null ? String(extracted.opening_balance_rice) : '',
+        daily_count: extracted.daily_count != null ? String(extracted.daily_count) : '',
+        closing_balance_rice: extracted.closing_balance_rice != null ? String(extracted.closing_balance_rice) : '',
+      });
+    } catch (err) {
+      console.error('Error re-extracting ledger data:', err);
+      setErrorMessage(err.message || 'Failed to re-extract ledger data from edited text.');
+    } finally {
+      setIsReExtracting(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage(null);
@@ -152,19 +197,52 @@ export default function ReviewTable({
 
   return (
     <div className="space-y-6">
-      {/* Transcript Review Card */}
-      {transcription && (
+      {/* Editable Transcript Review Card */}
+      {transcription !== null && (
         <div className="bg-slate-900 text-slate-100 rounded-xl p-4 sm:p-5 shadow-sm border border-slate-800">
-          <div className="flex items-center gap-2 mb-2 text-xs font-bold uppercase tracking-wider text-emerald-400">
-            <MessageSquare className="w-4 h-4" />
-            <span>Voice Recognition Transcript ("What Was Heard")</span>
+          <div className="flex items-center justify-between gap-2 mb-2.5">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-400">
+              <MessageSquare className="w-4 h-4" />
+              <span>Voice Recognition Transcript ("What Was Heard")</span>
+            </div>
+            <span className="text-[10px] text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">
+              Editable
+            </span>
           </div>
-          <p className="text-sm font-mono text-slate-200 bg-slate-950/60 p-3 rounded-lg border border-slate-800 leading-relaxed break-words">
-            "{transcription}"
-          </p>
-          <p className="text-[11px] text-slate-400 mt-2 m-0">
-            AI extracted the fields below from this transcription. Review and correct any figures before final commitment.
-          </p>
+
+          <textarea
+            rows={3}
+            value={editableTranscript}
+            onChange={(e) => setEditableTranscript(e.target.value)}
+            disabled={isReExtracting || isSaving}
+            placeholder="Edit or paste speech transcript here..."
+            className="w-full text-xs sm:text-sm font-mono text-slate-100 bg-slate-950/80 p-3 rounded-lg border border-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none leading-relaxed transition-all resize-y"
+          />
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-3 pt-2.5 border-t border-slate-800/80">
+            <p className="text-[11px] text-slate-400 m-0">
+              Correct any misheard words or quantities, then click Re-extract to update the fields below.
+            </p>
+
+            <button
+              type="button"
+              onClick={handleReExtract}
+              disabled={isReExtracting || isSaving || !editableTranscript.trim()}
+              className="flex items-center justify-center gap-2 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-xs disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed shrink-0"
+            >
+              {isReExtracting ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Re-extracting Data...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Re-extract Data from Text</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       )}
 
