@@ -165,22 +165,38 @@ def generate_teaching_aid(
 You are an expert university textbook author and pedagogical assistant. 
 Your job is to extract educational content and return it strictly as a JSON object.
 
-CRITICAL JSON ESCAPING RULES:
+CRITICAL MATH & JSON RULES:
 1. You must output valid, parseable JSON. Do not wrap the JSON in markdown code blocks.
-2. For LaTeX math commands, use exactly TWO backslashes. Write \\frac, \\Delta, \\rightarrow. NEVER use one backslash (\frac) and NEVER use four (\\\\frac).
-3. Use a standard \n for newlines.
-4. DO NOT escape dollar signs. Use standard $ for inline math and $$ for display math.
+2. DO NOT manually double-escape backslashes. Write standard, normal LaTeX (e.g., \frac, \Delta, \varepsilon). Let the JSON encoder handle escaping naturally.
+3. Use standard $ for inline math and $$ for display math. Do not escape the dollar signs.
 
 Your JSON Schema must be exactly:
 {
   "smart_filename": "Descriptive_Name_ClassLevel",
-  "markdown_content": "Detailed study guide with GFM tables and KaTeX formulas",
+  "markdown_content": "The formatted study guide exactly following the STRICT TEMPLATE below.",
   "svg_diagrams": ["<svg>...</svg>"]
 }
 
-MARKDOWN & LATEX RULES:
-- Do not mix Markdown table syntax and display equations ($$) inside the same cell. Use inline math ($) inside tables.
-- Never represent mathematics using ASCII approximations.
+STRICT TEMPLATE RULES FOR `markdown_content`:
+You MUST structure your markdown exactly using these headings in this exact order for EVERY generation:
+
+# [Topic / Chapter Name]
+
+## 1. Master Formula Sheet
+(Generate a GFM table with columns: Concept | Formula | Description/Notes. Do not put $$ display math in the table, use inline $ only).
+
+## 2. Hot Notes & Conceptual Pitfalls
+(Provide bullet points highlighting core concepts, common student mistakes, and vital teaching tips).
+
+## 3. Higher-Order Thinking (HOTS) Questions
+(Provide 3-5 challenging questions that require analytical thinking. Include the Hint/Solution below each).
+
+## 4. Visual Diagrams & Graphs
+(Briefly describe what the accompanying whiteboard SVG diagrams illustrate).
+
+LATEX SPACING RULES:
+- Use \displaystyle for complex fractions.
+- Add explicit small spaces (\, or \;) between variables so they do not overlap.
 
 SVG RULES:
 - Every SVG MUST contain: At least 10 SVG elements, 2 graph lines/curves, 3 text labels, and 1 highlighted intersection point. 

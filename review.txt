@@ -146,6 +146,18 @@ Summary of Implementation:
     - Unescaped dollar signs ($ and $$).
   * Tested and validated with backend test suite and frontend build.
 
+- 12. Strict Markdown Template & LaTeX Spacing Rules (backend/routers/notes.py):
+  * Enforced repeatable, standardized heading layout for every generation:
+    1. # [Topic / Chapter Name]
+    2. ## 1. Master Formula Sheet (GFM table: Concept | Formula | Description/Notes, inline $ math only)
+    3. ## 2. Hot Notes & Conceptual Pitfalls (bullet points on core concepts and teaching tips)
+    4. ## 3. Higher-Order Thinking (HOTS) Questions (3-5 analytical questions with Hints/Solutions)
+    5. ## 4. Visual Diagrams & Graphs (explanations of accompanying whiteboard SVGs)
+  * Implemented LaTeX spacing rules: \\displaystyle for complex fractions and explicit small spaces (\\, or \\;) between variables, derivatives, and multiplication operators to eliminate variable overlap.
+- 13. Elimination of Aggressive Backslash Escaping Rules (backend/routers/notes.py):
+  * Replaced confusing double-escape directives with natural LaTeX instructions (standard \frac, \Delta, \varepsilon) so the LLM does not overthink escapes and generate 8 backslashes (\\\\\\\\varepsilon).
+  * Maintained strict template structure, \displaystyle for complex fractions, spacing with \, or \;, and SVG complexity requirements.
+
 ================================================================================
 
 
