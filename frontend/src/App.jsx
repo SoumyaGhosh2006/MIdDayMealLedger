@@ -166,7 +166,7 @@ export default function App() {
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
           <div>
             <p className="font-semibold text-slate-300 m-0">
-              Midday Meal Ledger
+              SchoolDesk
             </p>
             <p className="text-[11px] text-slate-500 m-0 mt-0.5">
               Automated Financial Ledger & Voice-Driven Record System

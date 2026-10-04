@@ -99,15 +99,15 @@ export default function LedgerHistory() {
   };
 
   const getExportBaseFilename = () => {
-    if (!ledgers || ledgers.length === 0) return 'MidDayMeal';
+    if (!ledgers || ledgers.length === 0) return 'SchoolDesk';
     const dates = ledgers.map((l) => l.date).filter(Boolean).sort();
-    if (dates.length === 0) return 'MidDayMeal';
+    if (dates.length === 0) return 'SchoolDesk';
     const minDate = dates[0];
     const maxDate = dates[dates.length - 1];
     if (minDate === maxDate) {
-      return `MidDayMeal_${formatDateForFilename(minDate)}`;
+      return `SchoolDesk_${formatDateForFilename(minDate)}`;
     }
-    return `MidDayMeal_${formatDateForFilename(minDate)}_to_${formatDateForFilename(maxDate)}`;
+    return `SchoolDesk_${formatDateForFilename(minDate)}_to_${formatDateForFilename(maxDate)}`;
   };
 
   const handleExportCSV = () => {

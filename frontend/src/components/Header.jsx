@@ -13,7 +13,7 @@ export default function Header({ activeTab, setActiveTab, backendStatus }) {
             </div>
             <div>
               <h1 className="text-base sm:text-lg font-bold tracking-tight text-white m-0 p-0">
-                Midday Meal Ledger
+                SchoolDesk
               </h1>
             </div>
           </div>

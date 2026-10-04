@@ -496,7 +496,7 @@ export default function AdminNotes() {
                   </p>
                 </div>
                 <div className="text-right text-[11px] text-slate-400">
-                  Generated via Midday Meal AI Hub
+                  Generated via SchoolDesk
                 </div>
               </div>
 
