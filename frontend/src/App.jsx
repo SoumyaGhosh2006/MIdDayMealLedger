@@ -1,39 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Header from './components/Header';
 import AudioRecorder from './components/AudioRecorder';
 import ReviewTable from './components/ReviewTable';
 import LedgerHistory from './components/LedgerHistory';
 import AdminNotes from './components/AdminNotes';
-import { api } from './api';
 import { CheckCircle2, AlertTriangle, X, PlusCircle } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('daily-entry');
-  const [backendStatus, setBackendStatus] = useState('checking');
   const [currentDraft, setCurrentDraft] = useState(null);
   const [notification, setNotification] = useState(null);
-
-  // Health check on mount and interval
-  useEffect(() => {
-    let isMounted = true;
-
-    const performHealthCheck = async () => {
-      try {
-        await api.checkHealth();
-        if (isMounted) setBackendStatus('online');
-      } catch (err) {
-        if (isMounted) setBackendStatus('offline');
-      }
-    };
-
-    performHealthCheck();
-    const interval = setInterval(performHealthCheck, 30000); // 30s probe
-
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
-  }, []);
 
   const handleVoiceProcessed = ({ transcription, data }) => {
     setCurrentDraft({ transcription, data });
@@ -92,7 +68,6 @@ export default function App() {
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        backendStatus={backendStatus}
       />
 
       {/* Global Toast Notification */}

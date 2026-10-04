@@ -2,7 +2,6 @@ export const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 const API_ROOT = BASE_URL.replace(/\/+$/, '').replace(/\/api\/(ledger|notes)$/, '');
 export const LEDGER_URL = `${API_ROOT}/api/ledger`;
 export const NOTES_URL = `${API_ROOT}/api/notes`;
-export const HEALTH_URL = `${API_ROOT}/health`;
 
 /**
  * Re-extracts structured ledger data from edited or raw text via POST /api/ledger/extract-text.
@@ -48,15 +47,6 @@ export async function generateTeachingAid(file) {
 
 
 export const api = {
-  /**
-   * Health check probe to verify backend & DB connectivity.
-   */
-  async checkHealth() {
-    const res = await fetch(HEALTH_URL);
-    if (!res.ok) throw new Error(`Health check failed: HTTP ${res.status}`);
-    return res.json();
-  },
-
   /**
    * Uploads recorded audio to POST /api/ledger/process-voice.
    * Sends multipart/form-data with recording.webm payload and optional reference_date.
