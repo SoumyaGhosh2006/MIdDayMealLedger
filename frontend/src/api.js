@@ -1,9 +1,8 @@
-const API_ROOT = import.meta.env.VITE_API_URL 
-  ? import.meta.env.VITE_API_URL.replace(/\/api\/ledger\/?$/, '') 
-  : 'http://localhost:8000';
-const BASE_URL = import.meta.env.VITE_API_URL || `${API_ROOT}/api/ledger`;
-const NOTES_URL = `${API_ROOT}/api/notes`;
-const HEALTH_URL = `${API_ROOT}/health`;
+export const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_ROOT = BASE_URL.replace(/\/+$/, '').replace(/\/api\/(ledger|notes)$/, '');
+export const LEDGER_URL = `${API_ROOT}/api/ledger`;
+export const NOTES_URL = `${API_ROOT}/api/notes`;
+export const HEALTH_URL = `${API_ROOT}/health`;
 
 /**
  * Re-extracts structured ledger data from edited or raw text via POST /api/ledger/extract-text.
@@ -14,7 +13,7 @@ export async function extractText(text, referenceDate = null) {
   const payload = { text };
   if (referenceDate) payload.reference_date = referenceDate;
 
-  const res = await fetch(`${BASE_URL}/extract-text`, {
+  const res = await fetch(`${LEDGER_URL}/extract-text`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -70,7 +69,7 @@ export const api = {
       formData.append('reference_date', referenceDate);
     }
 
-    const res = await fetch(`${BASE_URL}/process-voice`, {
+    const res = await fetch(`${LEDGER_URL}/process-voice`, {
       method: 'POST',
       body: formData,
     });
@@ -94,7 +93,7 @@ export const api = {
    * Handles 409 DuplicateLedgerError cleanly.
    */
   async saveLedger(ledgerData) {
-    const res = await fetch(`${BASE_URL}/`, {
+    const res = await fetch(`${LEDGER_URL}/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(ledgerData),
@@ -120,7 +119,7 @@ export const api = {
     params.append('limit', limit);
     params.append('offset', offset);
 
-    const res = await fetch(`${BASE_URL}/?${params.toString()}`);
+    const res = await fetch(`${LEDGER_URL}/?${params.toString()}`);
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
       throw new Error(body.detail || body.error || `Failed to fetch ledgers (HTTP ${res.status})`);

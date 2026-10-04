@@ -21,12 +21,7 @@ from backend.routers import ledger, notes
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("middaymeal.api")
 
-ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:3000",
-]
+ALLOWED_ORIGINS = ["*"]
 
 
 @asynccontextmanager
@@ -39,16 +34,16 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Midday Meal Ledger API",
+    title="SchoolDesk API",
     version="1.0.0",
-    description="Stateless backend API for voice-driven school meal ledger management.",
+    description="Stateless backend API for SchoolDesk school ledger and AI pedagogical aid.",
     lifespan=lifespan,
 )
 
-# CORS: Browsers reject wildcard origins with credentials
+# CORS: Allow wildcard origins for cloud deployment (Vercel <-> Render)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
