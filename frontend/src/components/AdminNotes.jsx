@@ -426,7 +426,21 @@ export default function AdminNotes() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
+                <button 
+                  type="button"
+                  onClick={() => {
+                    const markdownData = sanitizedMarkdown || (teachingAid?.markdown_content || '').replace(/\\n/g, '\n');
+                    navigator.clipboard.writeText(markdownData);
+                    window.open('https://docs.google.com/document/create', '_blank');
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs"
+                  title="Copy markdown and open new Google Doc to paste"
+                >
+                  <FileText className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Edit in Google Docs</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={handleCopyAidMarkdown}

@@ -154,9 +154,18 @@ Summary of Implementation:
     4. ## 3. Higher-Order Thinking (HOTS) Questions (3-5 analytical questions with Hints/Solutions)
     5. ## 4. Visual Diagrams & Graphs (explanations of accompanying whiteboard SVGs)
   * Implemented LaTeX spacing rules: \\displaystyle for complex fractions and explicit small spaces (\\, or \\;) between variables, derivatives, and multiplication operators to eliminate variable overlap.
-- 13. Elimination of Aggressive Backslash Escaping Rules (backend/routers/notes.py):
-  * Replaced confusing double-escape directives with natural LaTeX instructions (standard \frac, \Delta, \varepsilon) so the LLM does not overthink escapes and generate 8 backslashes (\\\\\\\\varepsilon).
-  * Maintained strict template structure, \displaystyle for complex fractions, spacing with \, or \;, and SVG complexity requirements.
+- 14. Prerequisite Memory Scope & Google Docs Export Bridge:
+  * Backend Prerequisite Memory Scope (backend/routers/notes.py):
+    - Set Groq LLM temperature to 0.2 (allowing 20% creativity to recall external prerequisite foundational knowledge).
+    - Upgraded system_prompt to explicitly separate:
+      - ## 1. Master Formula Sheet (From Text): GFM table extracting only explicit formulas in text.
+      - ## 2. Essential Prerequisite Formulas (AI Knowledge Base): 2-3 foundational formulas/models from internal LLM memory required to solve problems or derivations not present in source text.
+      - ## 3. Hot Notes & Conceptual Pitfalls
+      - ## 4. Higher-Order Thinking (HOTS) Questions
+      - ## 5. Visual Diagrams & Graphs
+  * Frontend Google Docs Bridge (frontend/src/components/AdminNotes.jsx):
+    - Added "Edit in Google Docs" button in teaching aid preview bar.
+    - Copies sanitized markdown directly to clipboard and launches https://docs.google.com/document/create in a new tab for instant paste & edit.
 
 ================================================================================
 
