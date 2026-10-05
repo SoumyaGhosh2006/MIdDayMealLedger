@@ -12,7 +12,8 @@ import {
   RefreshCw,
   AlertCircle,
   Download,
-  PenTool
+  PenTool,
+  Trash2
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { api } from '../api';
@@ -26,6 +27,26 @@ export default function LedgerHistory() {
   const [endDate, setEndDate] = useState('');
   const [expandedId, setExpandedId] = useState(null);
   const [isExportingHandwritten, setIsExportingHandwritten] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+
+  const handleDeleteEntry = async (id, entryDate) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete the ledger entry for ${entryDate}? This action cannot be undone.`
+    );
+    if (!confirmed) return;
+    setDeletingId(id);
+    setError(null);
+    try {
+      await api.deleteLedgerEntry(id);
+      setLedgers((prev) => prev.filter((item) => item.id !== id));
+      if (expandedId === id) setExpandedId(null);
+    } catch (err) {
+      console.error('Failed to delete ledger entry:', err);
+      setError(err.message || 'Failed to delete ledger entry.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -562,6 +583,35 @@ export default function LedgerHistory() {
                                   </div>
                                 </div>
                               </div>
+
+                              {/* Action row: Delete Entry */}
+                              <div className="mt-4 pt-3 border-t border-slate-200/80 flex items-center justify-between">
+                                <span className="text-xs text-slate-400">
+                                  Entry ID: <span className="font-mono">{row.id}</span>
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteEntry(row.id, row.date);
+                                  }}
+                                  disabled={deletingId === row.id}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
+                                  title="Delete this ledger entry"
+                                >
+                                  {deletingId === row.id ? (
+                                    <>
+                                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                      Deleting...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                      Delete Entry
+                                    </>
+                                  )}
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         )}
@@ -670,6 +720,32 @@ export default function LedgerHistory() {
                               <span className="font-mono font-bold">{row.class_8}</span>
                             </div>
                           </div>
+                        </div>
+
+                        {/* Mobile Delete Entry Button */}
+                        <div className="pt-2 border-t border-slate-200/80 flex justify-end">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteEntry(row.id, row.date);
+                            }}
+                            disabled={deletingId === row.id}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
+                            title="Delete this ledger entry"
+                          >
+                            {deletingId === row.id ? (
+                              <>
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                Deleting...
+                              </>
+                            ) : (
+                              <>
+                                <Trash2 className="w-3.5 h-3.5" />
+                                Delete Entry
+                              </>
+                            )}
+                          </button>
                         </div>
                       </div>
                     )}

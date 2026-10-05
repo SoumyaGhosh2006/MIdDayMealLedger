@@ -45,6 +45,21 @@ export async function generateTeachingAid(file) {
   return body;
 }
 
+/**
+ * Deletes a ledger entry by ID via DELETE /api/ledger/{entryId}.
+ */
+export async function deleteLedgerEntry(entryId) {
+  const res = await fetch(`${LEDGER_URL}/${entryId}`, {
+    method: 'DELETE',
+  });
+
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(body.detail || body.error || `Failed to delete ledger entry (HTTP ${res.status})`);
+  }
+  return body;
+}
+
 
 export const api = {
   /**
@@ -173,6 +188,11 @@ export const api = {
    * Generates formulas, HOTS questions, SVG whiteboard diagrams, and smart filename.
    */
   generateTeachingAid,
+
+  /**
+   * Deletes a ledger entry by ID via DELETE /api/ledger/{entryId}.
+   */
+  deleteLedgerEntry,
 };
 
 export default api;

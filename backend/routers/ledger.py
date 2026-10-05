@@ -7,7 +7,11 @@ from sqlalchemy.orm import Session
 from backend.database import get_db
 from backend.schemas import ExtractTextRequest, LedgerCreate, LedgerResponse
 from backend.services.audio_service import transcribe_audio
-from backend.services.ledger_service import create_ledger_entry, list_ledger_entries
+from backend.services.ledger_service import (
+    create_ledger_entry,
+    delete_ledger_entry,
+    list_ledger_entries,
+)
 from backend.services.llm_service import extract_ledger_from_text
 
 router = APIRouter()
@@ -130,4 +134,24 @@ def get_ledgers(
         limit=limit,
         offset=offset
     )
+
+
+@router.delete(
+    "/{entry_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Delete a daily ledger entry by ID"
+)
+def remove_ledger_entry(
+    entry_id: int,
+    db: Session = Depends(get_db)
+):
+    """Permanently deletes a daily ledger entry by its unique identifier."""
+    deleted = delete_ledger_entry(db, entry_id)
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Ledger entry with ID {entry_id} not found."
+        )
+    return {"status": "success", "id": entry_id, "message": f"Ledger entry {entry_id} deleted."}
+
 
