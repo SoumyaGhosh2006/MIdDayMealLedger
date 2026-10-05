@@ -53,23 +53,3 @@ def list_ledger_entries(
         query = query.filter(DailyLedger.date <= end_date)
     return query.order_by(DailyLedger.date.asc()).offset(offset).limit(limit).all()
 
-
-def delete_ledger_entry(db: Session, entry_id: int) -> bool:
-    """
-    Permanently deletes a daily ledger entry by ID.
-    Returns True if deleted, False if entry was not found.
-    Rolls back automatically on failure.
-    """
-    entry = db.query(DailyLedger).filter(DailyLedger.id == entry_id).first()
-    if not entry:
-        return False
-    try:
-        db.delete(entry)
-        db.commit()
-        return True
-    except SQLAlchemyError as e:
-        db.rollback()
-        logger.error("Failed to delete ledger entry with ID %s: %s", entry_id, e)
-        raise
-
-
